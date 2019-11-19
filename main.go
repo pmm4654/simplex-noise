@@ -26,6 +26,21 @@ func getGradient(c1 color, c2 color) []color {
 	return result
 }
 
+func getDualGradient(c1, c2, c3, c4 color) []color {
+	result := make([]color, 256)
+	for i := range result {
+		pct := float32(i) / float32(255)
+
+		// this will get all of the colors between c1 and c2
+		if pct < 0.5 {
+			result[i] = colorLerp(c1, c2, pct*float32(2)) // need to multiply by .2 because we are restricting it to .5
+		} else {
+			result[i] = colorLerp(c3, c4, pct*float32(1.5)-float32(0.5)) // just keeps the lerping in the the 0-1 range
+		}
+	}
+	return result
+}
+
 // fractal brownian motion
 // lacunarity is the rate that you will be changing the frequency through each iteration
 // gain is the rate that we will be changing this amplitude of the noise through each iteration
@@ -84,7 +99,8 @@ func makeNoise(pixels []byte, frequency float32, lacunarity float32, gain float3
 			i++
 		}
 	}
-	gradient := getGradient(color{255, 0, 0}, color{0, 0, 255})
+
+	gradient := getDualGradient(color{0, 0, 175}, color{80, 160, 244}, color{12, 192, 75}, color{255, 255, 255})
 	rescaleAndDraw(noise, min, max, gradient, pixels)
 }
 

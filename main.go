@@ -38,7 +38,8 @@ func rescaleAndDraw(noise []float32, min float32, max float32, pixels []byte) {
 	}
 }
 
-func makeNoise(pixels []byte) {
+func makeNoise(pixels []byte, frequency float32, lacunarity float32, gain float32, octaves int) {
+	fmt.Println(fmt.Sprintf("Frequency: %f, Lacunarity: %f, gain: %f, octaves: %d", frequency, lacunarity, gain, octaves))
 	noise := make([]float32, winHeight*winWidth)
 
 	i := 0
@@ -46,7 +47,7 @@ func makeNoise(pixels []byte) {
 	max := float32(-9999.0)
 	for y := 0; y < winHeight; y++ {
 		for x := 0; x < winWidth; x++ {
-			noise[i] = fbm2(float32(x), float32(y), .001, .5, 1, 3) // the smaller this number is the more zoomed in it appears to be
+			noise[i] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 			if noise[i] < min {
 				min = noise[i]
 			} else if noise[i] > max {
@@ -109,19 +110,56 @@ func main() {
 
 	pixels := make([]byte, winWidth*winHeight*4)
 
-	makeNoise(pixels)
-
-	texture.Update(nil, pixels, winWidth*4)
-	renderer.Copy(texture, nil, nil)
-	renderer.Present()
+	frequency := float32(.01)
+	gain := float32(.2)
+	lacunarity := float32(3.0)
+	octaves := 3
+	makeNoise(pixels, frequency, lacunarity, gain, octaves)
+	keyState := sdl.GetKeyboardState()
 	// Big Game Loop
-
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
 			case *sdl.QuitEvent:
 				return
 			}
+
+			mult := 1
+			if keyState[sdl.SCANCODE_LSHIFT] != 0 || keyState[sdl.SCANCODE_RSHIFT] != 0 {
+				mult = -1
+			}
+			if keyState[sdl.SCANCODE_O] != 0 {
+				octaves = octaves + 1*mult
+				makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			}
+
+			if keyState[sdl.SCANCODE_F] != 0 {
+				frequency = frequency + .001*float32(mult)
+				makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			}
+
+			if keyState[sdl.SCANCODE_G] != 0 {
+				gain = gain + 0.1*float32(mult)
+				makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			}
+
+			if keyState[sdl.SCANCODE_L] != 0 {
+				lacunarity = lacunarity + 0.1*float32(mult)
+				makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			}
+
+			if keyState[sdl.SCANCODE_R] != 0 {
+				frequency = float32(.01)
+				gain = float32(.2)
+				lacunarity = float32(3.0)
+				octaves = 3
+				makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			}
+
+			texture.Update(nil, pixels, winWidth*4)
+			renderer.Copy(texture, nil, nil)
+			renderer.Present()
+
 			sdl.Delay(16)
 		}
 	}

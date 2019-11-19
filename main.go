@@ -9,6 +9,22 @@ import (
 const winWidth int = 800
 const winHeight int = 600
 
+// fractal brownian motion
+// lacunarity is the rate that you will be changing the frequency through each iteration
+// gain is the rate that we will be changing this amplitude of the noise through each iteration
+// octaves - how many iterations we are going to do
+func fbm2(x float32, y float32, frequency float32, lacunarity float32, gain float32, octaves int) float32 {
+	var sum float32
+	amplitude := float32(1.0)
+	for i := 0; i < octaves; i++ {
+		// amplitude can make resulting numbers bigger or smaller - like how we scaled out the snoise function by dividing it by 100 earlier
+		sum += snoise2(x*frequency, y*frequency) * amplitude
+		frequency = frequency * lacunarity
+		amplitude = amplitude * gain
+	}
+	return sum
+}
+
 func rescaleAndDraw(noise []float32, min float32, max float32, pixels []byte) {
 	scale := 255.0 / (max - min) // scale that to the difference in range of your noise
 	offset := min * scale        // have an offset to push that range to start at 0 and count up
@@ -30,7 +46,7 @@ func makeNoise(pixels []byte) {
 	max := float32(-9999.0)
 	for y := 0; y < winHeight; y++ {
 		for x := 0; x < winWidth; x++ {
-			noise[i] = snoise2(float32(x)/100.0, float32(y)/100.0) // the smaller this number is the more zoomed out it appears to be
+			noise[i] = fbm2(float32(x), float32(y), .001, .5, 1, 3) // the smaller this number is the more zoomed in it appears to be
 			if noise[i] < min {
 				min = noise[i]
 			} else if noise[i] > max {

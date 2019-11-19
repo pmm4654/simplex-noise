@@ -9,6 +9,23 @@ import (
 const winWidth int = 800
 const winHeight int = 600
 
+func lerp(b1 byte, b2 byte, pct float32) byte {
+	return byte(float32(b1) + pct*(float32(b2)-float32(b1)))
+}
+
+func colorLerp(c1 color, c2 color, pct float32) color {
+	return color{lerp(c1.r, c2.r, pct), lerp(c1.g, c2.g, pct), lerp(c1.b, c2.b, pct)}
+}
+
+func getGradient(c1 color, c2 color) []color {
+	result := make([]color, 256)
+	for i := range result {
+		pct := float32(i) / float32(255)
+		result[i] = colorLerp(c1, c2, pct)
+	}
+	return result
+}
+
 // fractal brownian motion
 // lacunarity is the rate that you will be changing the frequency through each iteration
 // gain is the rate that we will be changing this amplitude of the noise through each iteration
@@ -25,16 +42,27 @@ func fbm2(x float32, y float32, frequency float32, lacunarity float32, gain floa
 	return sum
 }
 
-func rescaleAndDraw(noise []float32, min float32, max float32, pixels []byte) {
+// ensures the value is within the range you want
+func clamp(min, max, v int) int {
+	if v < min {
+		v = min
+	} else if v > max {
+		v = max
+	}
+	return v
+}
+
+func rescaleAndDraw(noise []float32, min float32, max float32, gradient []color, pixels []byte) {
 	scale := 255.0 / (max - min) // scale that to the difference in range of your noise
 	offset := min * scale        // have an offset to push that range to start at 0 and count up
 
 	for i := range noise {
 		noise[i] = noise[i]*scale - offset
-		b := byte(noise[i])
-		pixels[i*4] = b
-		pixels[i*4+1] = b
-		pixels[i*4+2] = b
+		c := gradient[clamp(0, 255, int(noise[i]))]
+		p := i * 4 // pixel index
+		pixels[p] = c.r
+		pixels[p+1] = c.g
+		pixels[p+2] = c.b
 	}
 }
 
@@ -56,7 +84,8 @@ func makeNoise(pixels []byte, frequency float32, lacunarity float32, gain float3
 			i++
 		}
 	}
-	rescaleAndDraw(noise, min, max, pixels)
+	gradient := getGradient(color{255, 0, 0}, color{0, 0, 255})
+	rescaleAndDraw(noise, min, max, gradient, pixels)
 }
 
 type color struct {

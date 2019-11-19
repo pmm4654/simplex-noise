@@ -30,7 +30,7 @@ func makeNoise(pixels []byte) {
 	max := float32(-9999.0)
 	for y := 0; y < winHeight; y++ {
 		for x := 0; x < winWidth; x++ {
-			noise[i] = snoise2(float32(x)/100.0, float32(y)/100.0)
+			noise[i] = snoise2(float32(x)/100.0, float32(y)/100.0) // the smaller this number is the more zoomed out it appears to be
 			if noise[i] < min {
 				min = noise[i]
 			} else if noise[i] > max {

@@ -41,6 +41,22 @@ func getDualGradient(c1, c2, c3, c4 color) []color {
 	return result
 }
 
+func turbulence(x, y, frequency, lacunarity, gain float32, octaves int) float32 {
+	var sum float32
+	amplitude := float32(1)
+
+	for i := 0; i < octaves; i++ {
+		noise := snoise2(x*frequency, y*frequency) * amplitude
+		if noise < 0 {
+			noise = -1.0 * noise // avoid go's 64 bit absolute value function so we need no conversions
+		}
+		sum += noise
+		frequency *= lacunarity
+		amplitude *= gain
+	}
+	return sum
+}
+
 // fractal brownian motion
 // lacunarity is the rate that you will be changing the frequency through each iteration
 // gain is the rate that we will be changing this amplitude of the noise through each iteration
@@ -90,7 +106,8 @@ func makeNoise(pixels []byte, frequency float32, lacunarity float32, gain float3
 	max := float32(-9999.0)
 	for y := 0; y < winHeight; y++ {
 		for x := 0; x < winWidth; x++ {
-			noise[i] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+			// noise[i] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+			noise[i] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 			if noise[i] < min {
 				min = noise[i]
 			} else if noise[i] > max {
